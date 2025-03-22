@@ -18,7 +18,7 @@ export default function Page() {
   ];
 
   return (
-    <div className="flex flex-col gap-8 w-full h-[100%] bg-gray-900 py-20 px-5">
+    <div className="flex flex-col gap-8 w-full h-[100%] bg-gray-900 py-20 px-5 max-w-lg mx-auto">
       <h2 className="text-3xl font-semibold text-yellow-500 text-center mb-6">My Projects</h2>
       <div className="space-y-8">
         {projects.map((project, index) => (
