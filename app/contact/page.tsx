@@ -1,6 +1,6 @@
 export default function Page() {
   return (
-    <div className="w-full h-[100%] bg-gray-900 py-20 px-5 space-y-8 max-w-lg mx-auto">
+    <div className="w-full h-[100%] bg-gray-900 py-20 px-5 space-y-8 max-w-[1024px] mx-auto">
       <div className="text-center">
         <h2 className="text-3xl font-semibold text-yellow-500">Contact Us</h2>
       </div>
