@@ -23,17 +23,17 @@ export default function RootLayout({
       <body
         className={`bg-white min-h-screen ${prompt.className} antialiased`}
       >
-        <nav className="p-4 fixed top-0 w-full h-16 items-center bg-white shadow-md flex justify-between text-gray-900">
-          <Link href={"/"} className="text-xl font-bold">My Portfolio</Link>
+        <nav className="top-0 fixed flex justify-between items-center bg-white shadow-md p-4 w-full h-16 text-gray-900">
+          <Link href={"/"} className="font-bold text-xl">My Portfolio</Link>
           <div className="space-x-6">
             <Link href="/about">About</Link>
             <Link href="/projects">Projects</Link>
             <Link href="/contact">Contact</Link>
           </div>
         </nav>
-        <div className="pt-16 min-h-screen flex flex-col justify-between bg-gray-900">
+        <div className="flex flex-col justify-between bg-gray-900 pt-16 min-h-screen">
           {children}
-          <footer className="p-4 bg-gray-900 text-white text-sm font-light text-center">
+          <footer className="bg-gray-900 p-4 font-light text-white text-sm text-center">
             <p>&copy; {new Date().getFullYear()} My Portfolio</p>
           </footer>
         </div>
