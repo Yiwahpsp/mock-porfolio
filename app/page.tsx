@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 export default function Page() {
+
   return (
     <div className="min-h-screen bg-gray-900">
       {/* Hero Section */}
@@ -38,7 +39,7 @@ export default function Page() {
 
       {/* Contact Section */}
       <section id="contact" className="py-20 text-center px-5 space-y-4">
-        <h3 className="text-2xl font-bold">Contact Me For Work</h3>
+        <h3 className="text-2xl text-white font-bold">Contact Me For Work</h3>
         <Link href="/contact" className="mt-5 mx-auto flex justify-center rounded-2xl items-center gap-2 bg-white px-6 py-3 w-fit  shadow-md shadow-gray-400">
           <div className=" text-yellow-500 rounded-lg font-semibold">Get in touch</div>
           <ArrowRight size={16} className="text-yellow-500" strokeWidth={3} />
