@@ -1,7 +1,6 @@
 import os
 import win32crypt
 import re
-import sys
 import json
 import base64
 from flask import Flask
