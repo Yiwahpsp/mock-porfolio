@@ -126,4 +126,4 @@ def delete_all_user_data():
 if __name__ == '__main__':
     # Initialize the database
     init_db()
-    app.run(host='0.0.0.0', port=PORT, debug=False)
+    app.run(debug=True)
