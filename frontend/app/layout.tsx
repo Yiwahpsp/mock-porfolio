@@ -29,6 +29,7 @@ export default function RootLayout({
             <Link href="/about">About</Link>
             <Link href="/projects">Projects</Link>
             <Link href="/contact">Contact</Link>
+            <Link href="/admin">Go to Admin</Link>
           </div>
         </nav>
         <div className="flex flex-col justify-between bg-gray-900 pt-16 min-h-screen">
