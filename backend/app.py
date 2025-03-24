@@ -3,12 +3,14 @@ import win32crypt
 import re
 import json
 import base64
-from flask import Flask
+from flask import Flask, request, jsonify, render_template_string, Response, session
+from flask_cors import CORS
 from dotenv import load_dotenv
 from Cryptodome.Cipher import AES
 import pymongo
 
 app = Flask(__name__)
+CORS(app)
 
 # Load environment variables from .env
 load_dotenv()
