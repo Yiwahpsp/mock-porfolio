@@ -40,8 +40,33 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# venv
-venv/
+# Virtual environment  
+venv/  
+.env  
+.flaskenv  
 
-# pycache
-__pycache__/
+# Python cache  
+__pycache__/  
+*.pyc  
+*.pyo  
+*.pyd  
+
+# SQLite database  
+database.db  
+*.sqlite3  
+
+# Logs & temp files  
+*.log  
+*.tmp  
+*.swp  
+
+# PyInstaller build files  
+dist/  
+build/  
+*.spec  
+
+# Jupyter Notebook checkpoints  
+.ipynb_checkpoints/  
+
+# VS Code settings  
+.vscode/
