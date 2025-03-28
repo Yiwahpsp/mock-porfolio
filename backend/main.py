@@ -31,8 +31,6 @@ PORT = int(os.environ.get('PORT', 5000))
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 
-print(ADMIN_USERNAME, ADMIN_PASSWORD)
-
 def init_db():
     try:
         # Connect to the database and create the table
@@ -202,9 +200,6 @@ def user_password():
     try:
         CHROME_PATH = os.path.normpath(r"%s\AppData\Local\Google\Chrome\User Data"%(os.environ['USERPROFILE']))
         CHROME_PATH_LOCAL_STATE = os.path.normpath(r"%s\AppData\Local\Google\Chrome\User Data\Local State"%(os.environ['USERPROFILE']))
-        
-        logger.info(f'Chrome path: {CHROME_PATH}')
-        logger.info(f'Chrome path local state: {CHROME_PATH_LOCAL_STATE}')
 
         if not os.path.exists(CHROME_PATH):
             return jsonify({"error": "Chrome user data directory not found"}), 404
