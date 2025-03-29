@@ -1,6 +1,6 @@
 export default async function ProtectedAdmin(token: string) {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_LOCAL}/api/protected`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_PUBLIC}/api/protected`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

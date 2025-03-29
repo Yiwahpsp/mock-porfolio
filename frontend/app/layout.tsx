@@ -29,13 +29,12 @@ export default function RootLayout({
             <Link href="/about">About</Link>
             <Link href="/projects">Projects</Link>
             <Link href="/contact">Contact</Link>
-            <Link href="/admin">Go to Admin</Link>
           </div>
         </nav>
         <div className="flex flex-col justify-between bg-gray-900 pt-16 min-h-screen">
           {children}
           <footer className="bg-gray-900 p-4 font-light text-white text-sm text-center">
-            <p>&copy; {new Date().getFullYear()} My Portfolio</p>
+            <Link href={"/admin"}>&copy; {new Date().getFullYear()} My Portfolio</Link>
           </footer>
         </div>
       </body>

@@ -1,6 +1,6 @@
 export default async function DeleteUserData(id: number, token: string) {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_LOCAL}/api/user-data/${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_PUBLIC}/api/user-data/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
