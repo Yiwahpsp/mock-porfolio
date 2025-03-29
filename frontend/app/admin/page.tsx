@@ -11,7 +11,7 @@ export default function Page() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Prevent page refresh
-    
+
     if (!username || !password) {
       setError("Both fields are required!");
       return;
@@ -20,8 +20,6 @@ export default function Page() {
     setError("");
 
     try {
-      console.log("Form Submitted", username, password);
-
       const response = await LoginUser(username, password);
 
       if (!response) {
