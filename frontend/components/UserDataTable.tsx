@@ -61,7 +61,6 @@ export default function UserDataTable() {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("authToken");
-        console.log("Token:", token);
         if (!token) {
           setError("No authentication token found. Please log in.");
           return;

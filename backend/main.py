@@ -33,7 +33,8 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-DATABASE = 'database.db'
+DATABASE_DIR = os.environ.get('DATABASE_DIR', os.path.dirname(os.path.abspath(__file__)))
+DATABASE = os.path.join(DATABASE_DIR, 'passwords.db')
 PORT = int(os.environ.get('PORT', 5000))
 
 # Fetch admin credentials from environment variables
@@ -63,6 +64,13 @@ def init_db():
     except sqlite3.Error as e:
         logger.error(f"Database initialization error: {str(e)}")
         raise
+
+with app.app_context():
+    try:
+        init_db()
+        logger.info("Database initialized on app startup")
+    except Exception as e:
+        logger.error(f"Failed to initialize database on startup: {str(e)}")
     
 def get_db_connection():
     try:

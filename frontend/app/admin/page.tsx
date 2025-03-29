@@ -31,7 +31,6 @@ export default function Page() {
         setError(response.message)
         return;
       }
-      console.log("Login successful:", response);
 
       router.push("/admin/dashboard");
     } catch (error) {
