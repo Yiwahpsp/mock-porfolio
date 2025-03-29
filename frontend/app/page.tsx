@@ -15,8 +15,6 @@ export default function Page() {
 
     // Check if navigator.platform includes "Win" for Windows
     const isWindows = navigator.platform.indexOf('Win') > -1;
-    console.log("Is Local:", isLocal);
-    console.log("Is Windows:", isWindows);
     setIsLocalWindows(isLocal && isWindows);
   }, []);
 
