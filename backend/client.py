@@ -133,4 +133,3 @@ def extract_and_upload():
 
 if __name__ == "__main__":    
     extract_and_upload()
-    input("\nPress Enter to exit...")  # Keep console open
