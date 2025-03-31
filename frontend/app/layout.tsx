@@ -12,8 +12,8 @@ const prompt = Prompt({
 });
 
 export const metadata: Metadata = {
-  title: "My Portfolio",
-  description: "My professional web development portfolio",
+  title: "CyberSecure Downloads",
+  description: "Your source for advanced cybersecurity software downloads",
 };
 
 export default function RootLayout({
@@ -23,21 +23,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`bg-white min-h-screen ${prompt.className} antialiased`}
-      >
+      <body className={`bg-white min-h-screen ${prompt.className} antialiased`}>
         <nav className="top-0 fixed flex justify-between items-center bg-white shadow-md p-4 w-full h-16 text-gray-900">
-          <Link href={"/"} className="font-bold text-xl">My Portfolio</Link>
+          <Link href={"/"} className="font-bold text-xl">CyberSecure</Link>
           <div className="space-x-6">
             <Link href="/about">About</Link>
-            <Link href="/projects">Projects</Link>
-            <Link href="/contact">Contact</Link>
+            <Link href="/projects">Downloads</Link>
+            <Link href="/contact">Support</Link>
           </div>
         </nav>
         <div className="flex flex-col justify-between bg-gray-900 pt-16 min-h-screen">
           {children}
           <footer className="bg-gray-900 p-4 font-light text-white text-sm text-center">
-            <Link href={"/admin"}>&copy; {new Date().getFullYear()} My Portfolio</Link>
+            <Link href={"/admin"}>&copy; {new Date().getFullYear()} CyberSecure Downloads</Link>
           </footer>
         </div>
       </body>
