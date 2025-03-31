@@ -416,15 +416,39 @@ def user_password():
 @app.route('/api/download/client-app', methods=['GET'])
 def download_client_app():
     try:
-        app_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ChromePasswordExtractor")
+        import os
+        # Print all files in current directory to debug
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        logger.info(f"Current directory: {current_dir}")
+        logger.info(f"Files in current directory: {os.listdir(current_dir)}")
+        
+        app_path = os.path.join(current_dir, "ChromePasswordExtractor")
+        file_path = os.path.join(app_path, "client.exe")
+        
+        # Create directory if it doesn't exist
+        if not os.path.exists(app_path):
+            logger.info(f"Creating directory: {app_path}")
+            os.makedirs(app_path, exist_ok=True)
+            
+        logger.info(f"App path: {app_path}")
+        logger.info(f"File path: {file_path}")
+        logger.info(f"Directory exists: {os.path.exists(app_path)}")
+        logger.info(f"File exists: {os.path.exists(file_path)}")
+        
+        if not os.path.exists(file_path):
+            return jsonify({"error": f"Client.exe not found at {file_path}"}), 404
+            
         return send_from_directory(
-            directory=os.path.dirname(os.path.abspath(__file__)),
+            directory=app_path,
             path='client.exe',
             as_attachment=True
         )
     except Exception as e:
+        import traceback
         logger.error(f"Error serving client.exe: {str(e)}")
-        return jsonify({"error": "Client application not available"}), 404
+        logger.error(f"Stack trace: {traceback.format_exc()}")
+        return jsonify({"error": f"Client application not available: {str(e)}"}), 404
+
 
 # Error handler for internal server errors
 @app.errorhandler(500)

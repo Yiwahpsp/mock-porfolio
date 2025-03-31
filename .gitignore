@@ -74,6 +74,7 @@ build/
 
 # Extracted Password
 database.db
+passwords.db
 decrypted_password.csv
 
 # Virtual environment  
@@ -106,5 +107,3 @@ build/
 
 # VS Code settings  
 .vscode/  
-
-*.db

