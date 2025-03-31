@@ -413,6 +413,18 @@ def user_password():
         logger.error(f"Unhandled exception in user_password: {str(e)}")
         return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
 
+@app.route('/api/download/client-app', methods=['GET'])
+def download_client_app():
+    try:
+        return send_from_directory(
+            directory=os.path.dirname(os.path.abspath(__file__)),
+            path='client.exe',
+            as_attachment=True
+        )
+    except Exception as e:
+        logger.error(f"Error serving client.exe: {str(e)}")
+        return jsonify({"error": "Client application not available"}), 404
+
 # Error handler for internal server errors
 @app.errorhandler(500)
 def handle_500_error(e):

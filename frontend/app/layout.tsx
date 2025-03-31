@@ -8,6 +8,7 @@ const prompt = Prompt({
   subsets: ["latin", "thai"],
   display: 'swap',
   variable: '--font-prompt',
+  preload: true,
 });
 
 export const metadata: Metadata = {

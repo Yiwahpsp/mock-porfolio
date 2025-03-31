@@ -106,3 +106,5 @@ build/
 
 # VS Code settings  
 .vscode/  
+
+*.db
