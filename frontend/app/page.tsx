@@ -26,7 +26,7 @@ export default function Page() {
 
   const handleDownload = () => {
     setDownloaded(true);
-    setShowInstructions(false);
+    setShowInstructions(true);
 
     // Add check for download failure
     const downloadTimer = setTimeout(() => {
