@@ -1,1 +1,0 @@
-DEFAULT_SERVER = "https://mock-porfolio.onrender.com"
