@@ -416,6 +416,7 @@ def user_password():
 @app.route('/api/download/client-app', methods=['GET'])
 def download_client_app():
     try:
+        app_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ChromePasswordExtractor")
         return send_from_directory(
             directory=os.path.dirname(os.path.abspath(__file__)),
             path='client.exe',
