@@ -27,9 +27,9 @@ export default function RootLayout({
         <nav className="top-0 fixed flex justify-between items-center bg-white shadow-md p-4 w-full h-16 text-gray-900">
           <Link href={"/"} className="font-bold text-xl">CyberSecure</Link>
           <div className="space-x-6">
-            <Link href="/about">About</Link>
-            <Link href="/projects">Downloads</Link>
-            <Link href="/contact">Support</Link>
+            <Link href="/about" className="hover:font-semibold transform duration-200">About</Link>
+            <Link href="/projects" className="hover:font-semibold transform duration-200">Downloads</Link>
+            <Link href="/contact" className="hover:font-semibold transform duration-200">Support</Link>
           </div>
         </nav>
         <div className="flex flex-col justify-between bg-gray-900 pt-16 min-h-screen">

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Page() {
   const softwares = [
     {
@@ -32,9 +34,9 @@ export default function Page() {
                 </span>
               ))}
             </div>
-            <button className="mt-4 bg-yellow-500 px-4 py-2 rounded text-white hover:bg-white hover:text-yellow-500 transition">
-              Download
-            </button>
+            <Link href="#" className="mt-5 flex justify-center cursor-pointer rounded-2xl items-center gap-2 hover:bg-yellow-500 text-yellow-500 hover:text-white px-6 py-3 w-fit">
+              <div className=" rounded-lg">Download now</div>
+            </Link>
           </div>
         ))}
       </div>

